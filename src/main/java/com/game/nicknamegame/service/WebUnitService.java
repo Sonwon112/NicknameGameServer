@@ -18,6 +18,11 @@ public class WebUnitService {
 	@Autowired
 	WebUnitRepository repo;
 	
+	/**
+	 * 클라이언트에서 서버에 연결을 시도하고, 자신의 채널 id를 송신하였을 때 해당 ID에 맞게 WebUnit을 생성 
+	 * @param session 접속한 클라이언트의 Session
+	 * @param id 스트리머 본인의 채널 ID
+	 */
 	public void connectingObserver(Session session, String id) {
 		System.setProperty(WEB_DRIVER_ID, WEB_DRIVER_PATH);
 		String chatUrl = BASE_CHAT_URL + id+ "/chat";

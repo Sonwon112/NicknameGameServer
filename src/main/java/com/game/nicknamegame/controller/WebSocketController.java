@@ -32,7 +32,13 @@ public class WebSocketController {
 	public void setWebUnitService(WebUnitService service) {
 		WebSocketController.service = service;
 	}
-
+	
+	/**
+	 * 클라이언트 측에서 메시지를 전송했을 때 수신하는 핸들러 메소드
+	 * @param msg 클라이언트 측에서 송신한 메시지
+	 * @param session 메시지를 송신한 클라이언트의 Session 
+	 * @throws Exception
+	 */
 	@OnMessage
 	public void OnMesage(String msg, Session session) throws Exception {
 
@@ -60,7 +66,7 @@ public class WebSocketController {
 
 		switch (type) {
 			case CONNECT:
-				service.connectingObserver(session, data.get("channelId").toString());
+				service.connectingObserver(session, data.get("msg").toString());
 				break;
 			case PERMIT:
 				break;
@@ -68,7 +74,12 @@ public class WebSocketController {
 				break;
 		}
 	}
-
+	
+	/**
+	 * 클라이언트 접속시 실행되는 핸들러 메소드
+	 * @param s 접속하는 Session
+	 * 
+	 */
 	@OnOpen
 	public void OnOpen(Session s) {
 		log.info("openSession : {}", s.toString());
@@ -78,7 +89,11 @@ public class WebSocketController {
 			log.info("이미 연결된 세션입니다.");
 		}
 	}
-
+	
+	/**
+	 * 클라이언트의 연결이 끊겼을 때 실행되는 핸들러 메소드
+	 * @param s 연결이 끊긴 Session
+	 */
 	@OnClose
 	public void onClose(Session s) {
 
