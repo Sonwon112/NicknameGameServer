@@ -1,0 +1,87 @@
+package com.game.nicknamegame.controller;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.apache.catalina.core.ApplicationContext;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+
+import com.game.nicknamegame.customenum.MessageType;
+import com.game.nicknamegame.service.WebUnitService;
+
+import jakarta.websocket.OnClose;
+import jakarta.websocket.OnMessage;
+import jakarta.websocket.OnOpen;
+import jakarta.websocket.Session;
+import jakarta.websocket.server.ServerEndpoint;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Controller
+@ServerEndpoint(value = "/connect")
+public class WebSocketController {
+	private static Set<Session> clients = Collections.synchronizedSet(new HashSet<>());
+
+	private static WebUnitService service;
+
+	@Autowired
+	public void setWebUnitService(WebUnitService service) {
+		WebSocketController.service = service;
+	}
+
+	@OnMessage
+	public void OnMesage(String msg, Session session) throws Exception {
+
+		JSONObject data = null;
+		try {
+			JSONParser parser = new JSONParser();
+			Object obj = parser.parse(msg);
+			data = (JSONObject) obj;
+		} catch (Exception e) {
+			// e.printStackTrace();
+			log.warn("잘못된 형식 입니다. session : {}, error msg : {}", session.getId(), e.getMessage());
+		}
+
+		if (data == null)
+			return;
+		if (!data.containsKey("token")) {
+			log.warn("부적절한 접근입니다.");
+			return;
+		}
+		if (!data.get("token").equals("0niyaNicknameGame")) {
+			log.warn("부적절한 접근입니다.");
+			return;
+		}
+		MessageType type = MessageType.valueOf(data.get("type").toString());
+
+		switch (type) {
+			case CONNECT:
+				service.connectingObserver(session, data.get("channelId").toString());
+				break;
+			case PERMIT:
+				break;
+			case END:
+				break;
+		}
+	}
+
+	@OnOpen
+	public void OnOpen(Session s) {
+		log.info("openSession : {}", s.toString());
+		if (!clients.contains(s)) {
+			clients.add(s);
+		} else {
+			log.info("이미 연결된 세션입니다.");
+		}
+	}
+
+	@OnClose
+	public void onClose(Session s) {
+
+	}
+
+}
