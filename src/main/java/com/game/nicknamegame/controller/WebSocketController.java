@@ -1,5 +1,6 @@
 package com.game.nicknamegame.controller;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -27,6 +28,7 @@ public class WebSocketController {
 	private static Set<Session> clients = Collections.synchronizedSet(new HashSet<>());
 
 	private static WebUnitService service;
+	private JSONParser parser = new JSONParser();
 
 	@Autowired
 	public void setWebUnitService(WebUnitService service) {
@@ -44,7 +46,6 @@ public class WebSocketController {
 
 		JSONObject data = null;
 		try {
-			JSONParser parser = new JSONParser();
 			Object obj = parser.parse(msg);
 			data = (JSONObject) obj;
 		} catch (Exception e) {
@@ -59,7 +60,7 @@ public class WebSocketController {
 			return;
 		}
 		if (!data.get("token").equals("0niyaNicknameGame")) {
-			log.warn("부적절한 접근입니다.");
+			log.warn("잘못된 토큰입니다.");
 			return;
 		}
 		MessageType type = MessageType.valueOf(data.get("type").toString());
@@ -67,11 +68,26 @@ public class WebSocketController {
 		switch (type) {
 			case CONNECT:
 				service.connectingObserver(session, data.get("msg").toString());
+				sendMsg(session, "CONNECT", "success");
 				break;
 			case PERMIT:
 				break;
 			case END:
 				break;
+		}
+	}
+	
+	public void sendMsg(Session s,String type, String msg) {
+		try {
+			String data = 
+					"{"
+					+ "\"token\":\"0niyaNicknameGame\","
+					+ "\"type\":\""+type+"\","
+					+ "\"msg\":\""+msg+"\"}";
+			s.getBasicRemote().sendText(data);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 	
