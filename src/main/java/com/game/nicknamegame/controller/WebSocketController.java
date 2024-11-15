@@ -77,6 +77,12 @@ public class WebSocketController {
 		}
 	}
 	
+	/**
+	 * 전달 받은 세션에게 메시지를 전송하는 메소드
+	 * @param s 메시지를 전송할세션
+	 * @param type 메시지 타입
+	 * @param msg 전송할 메시지
+	 */
 	public void sendMsg(Session s,String type, String msg) {
 		try {
 			String data = 
