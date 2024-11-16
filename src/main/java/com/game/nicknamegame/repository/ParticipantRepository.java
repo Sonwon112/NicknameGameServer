@@ -5,21 +5,19 @@ import java.util.Set;
 
 import org.springframework.stereotype.Repository;
 
-import com.game.nicknamegame.model.Participant;
-
 @Repository
 public class ParticipantRepository {
 	
-	private Set<Participant> participantSet = new HashSet<Participant>();
+	private Set<String> participantSet = new HashSet<String>();
 	
-	public void AppendParticipant() {
-		
-	}
-	
-	public boolean ContainParticipant() {
-		
+	public boolean AppendParticipant(String nickname) {
+		if(!participantSet.contains(nickname)) {
+			participantSet.add(nickname);
+			return true;
+		}
 		return false;
 	}
+	
 	
 	
 }

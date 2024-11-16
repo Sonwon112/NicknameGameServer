@@ -11,11 +11,7 @@ public class ParticipantService {
 	@Autowired
 	ParticipantRepository repo;
 	
-	public void AppendParticipant() {
-		
-	}
-	
-	public boolean ContainParticipant() {
-		return repo.ContainParticipant();
+	public boolean AppendParticipant(String nickname) {
+		return repo.AppendParticipant(nickname);
 	}
 }
