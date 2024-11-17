@@ -22,6 +22,7 @@ public class WebUnit {
 	
 	public WebUnit(String url, WebUnitService service, String sessionId) {
 		this.url = url;
+		
 		driver = new ChromeDriver();
 		driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5));
 		openChrome();

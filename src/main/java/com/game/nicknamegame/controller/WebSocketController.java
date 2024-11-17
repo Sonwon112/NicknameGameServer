@@ -1,17 +1,13 @@
 package com.game.nicknamegame.controller;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.game.nicknamegame.customenum.MessageType;
 import com.game.nicknamegame.model.DTO;
 import com.game.nicknamegame.service.WebUnitService;
@@ -73,9 +69,14 @@ public class WebSocketController {
 				service.sendMsg(session, "CONNECT", "success");
 				break;
 			case PERMIT:
-				
+				if(data.getMsg().equals("permit")) {
+					service.permitPart(session);
+				}else if(data.getMsg().equals("stop")) {
+					service.stopPart(session);
+				}
 				break;
 			case END:
+				
 				break;
 		}
 	}
@@ -103,7 +104,7 @@ public class WebSocketController {
 	 */
 	@OnClose
 	public void onClose(Session s) {
-
+		// 세션 종료시 WebUnit 삭제
 	}
 
 }
