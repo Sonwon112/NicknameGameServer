@@ -4,9 +4,11 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.game.nicknamegame.customenum.MessageType;
 import com.game.nicknamegame.model.DTO;
 import com.game.nicknamegame.model.WebUnit;
 import com.game.nicknamegame.service.WebUnitService;
@@ -22,6 +24,9 @@ public class WebUnitRepository {
 	private Map<String, Session> sessionMap = new HashMap<>();
 
 	private ObjectMapper mapper = new ObjectMapper();
+	
+	@Value("${cookie}")
+	private String cookie;
 
 	/**
 	 * WebUnit을 생성하고 Map 키로는 Seesion Id, 값으로는 WebUnit을 저장
@@ -30,7 +35,7 @@ public class WebUnitRepository {
 	 * @param session 접속한 클라이언트의 Session
 	 */
 	public void CreateWebUnit(String url, Session session, WebUnitService service) {
-		WebUnit unit = new WebUnit(url, service, session.getId());
+		WebUnit unit = new WebUnit(url, service, session.getId(),cookie);
 		webUnitMap.put(session.getId(), unit);
 		sessionMap.put(session.getId(), session);
 	}
@@ -45,7 +50,7 @@ public class WebUnitRepository {
 			return;
 		}
 		WebUnit tmp = webUnitMap.get(session.getId());
-		tmp.startCrawl();
+		tmp.startCheck();
 	}
 
 	/**
@@ -58,7 +63,7 @@ public class WebUnitRepository {
 			return;
 		}
 		WebUnit tmp = webUnitMap.get(session.getId());
-		tmp.stopCrawl();
+		tmp.stopCheck();
 	}
 
 	/**
@@ -101,5 +106,24 @@ public class WebUnitRepository {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+	
+	/**
+	 * 세션 종료 메소드
+	 * @param sessionId 종료할 세션 id
+	 */
+	public void closeSession(String sessionId) {
+		try {
+			if(sessionMap.isEmpty())return;
+			if(sessionMap.get(sessionId).isOpen()) {
+				sendMsg(sessionMap.get(sessionId), MessageType.END.toString(), "connect Fail");
+				sessionMap.get(sessionId).close();
+			}	
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		webUnitMap.remove(sessionId);
+		sessionMap.remove(sessionId);
 	}
 }

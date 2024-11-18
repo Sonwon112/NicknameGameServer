@@ -13,6 +13,7 @@ import com.game.nicknamegame.model.DTO;
 import com.game.nicknamegame.service.WebUnitService;
 
 import jakarta.websocket.OnClose;
+import jakarta.websocket.OnError;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
@@ -65,8 +66,9 @@ public class WebSocketController {
 
 		switch (type) {
 			case CONNECT:
+				log.info("streamerID : "+data.getMsg()+" is trying Connect");
 				service.connectingObserver(session, data.getMsg().toString());
-				service.sendMsg(session, "CONNECT", "success");
+				service.sendMsg(session, MessageType.CONNECT.toString(), "success");
 				break;
 			case PERMIT:
 				if(data.getMsg().equals("permit")) {
@@ -74,6 +76,10 @@ public class WebSocketController {
 				}else if(data.getMsg().equals("stop")) {
 					service.stopPart(session);
 				}
+				break;
+			case RESET:
+				log.info("reset participant");
+				service.clearParticipant(session.getId());
 				break;
 			case END:
 				
@@ -105,6 +111,20 @@ public class WebSocketController {
 	@OnClose
 	public void onClose(Session s) {
 		// 세션 종료시 WebUnit 삭제
+		log.info("세션이 종료되었습니다.");
+		try {
+			service.closeSession(s.getId());
+		} catch (Exception e) {
+			// TODO: handle exception
+			log.error(e.getMessage());
+		}
+		
 	}
-
+	
+	
+	@OnError
+	public void onError(Session s, Throwable thr) {
+		
+	}
+	
 }
