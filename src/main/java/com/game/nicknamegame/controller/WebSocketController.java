@@ -1,20 +1,19 @@
 package com.game.nicknamegame.controller;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.catalina.core.ApplicationContext;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.game.nicknamegame.customenum.MessageType;
+import com.game.nicknamegame.model.DTO;
 import com.game.nicknamegame.service.WebUnitService;
 
 import jakarta.websocket.OnClose;
+import jakarta.websocket.OnError;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
@@ -28,7 +27,7 @@ public class WebSocketController {
 	private static Set<Session> clients = Collections.synchronizedSet(new HashSet<>());
 
 	private static WebUnitService service;
-	private JSONParser parser = new JSONParser();
+	private ObjectMapper mapper = new ObjectMapper();
 
 	@Autowired
 	public void setWebUnitService(WebUnitService service) {
@@ -44,10 +43,10 @@ public class WebSocketController {
 	@OnMessage
 	public void OnMesage(String msg, Session session) throws Exception {
 
-		JSONObject data = null;
+		DTO data = null;
 		try {
-			Object obj = parser.parse(msg);
-			data = (JSONObject) obj;
+			
+			data = mapper.readValue(msg, DTO.class);
 		} catch (Exception e) {
 			// e.printStackTrace();
 			log.warn("잘못된 형식 입니다. session : {}, error msg : {}", session.getId(), e.getMessage());
@@ -55,47 +54,40 @@ public class WebSocketController {
 
 		if (data == null)
 			return;
-		if (!data.containsKey("token")) {
+		if (data.getToken() == null || data.getToken().equals("")) {
 			log.warn("부적절한 접근입니다.");
 			return;
 		}
-		if (!data.get("token").equals("0niyaNicknameGame")) {
+		if (!data.getToken().equals("0niyaNicknameGame")) {
 			log.warn("잘못된 토큰입니다.");
 			return;
 		}
-		MessageType type = MessageType.valueOf(data.get("type").toString());
+		MessageType type = MessageType.valueOf(data.getType().toString());
 
 		switch (type) {
 			case CONNECT:
-				service.connectingObserver(session, data.get("msg").toString());
-				sendMsg(session, "CONNECT", "success");
+				log.info("streamerID : "+data.getMsg()+" is trying Connect");
+				service.connectingObserver(session, data.getMsg().toString());
+				service.sendMsg(session, MessageType.CONNECT.toString(), "success");
 				break;
 			case PERMIT:
+				if(data.getMsg().equals("permit")) {
+					service.permitPart(session);
+				}else if(data.getMsg().equals("stop")) {
+					service.stopPart(session);
+				}
+				break;
+			case RESET:
+				log.info("reset participant");
+				service.clearParticipant(session.getId());
 				break;
 			case END:
+				
 				break;
 		}
 	}
 	
-	/**
-	 * 전달 받은 세션에게 메시지를 전송하는 메소드
-	 * @param s 메시지를 전송할세션
-	 * @param type 메시지 타입
-	 * @param msg 전송할 메시지
-	 */
-	public void sendMsg(Session s,String type, String msg) {
-		try {
-			String data = 
-					"{"
-					+ "\"token\":\"0niyaNicknameGame\","
-					+ "\"type\":\""+type+"\","
-					+ "\"msg\":\""+msg+"\"}";
-			s.getBasicRemote().sendText(data);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
+	
 	
 	/**
 	 * 클라이언트 접속시 실행되는 핸들러 메소드
@@ -118,7 +110,21 @@ public class WebSocketController {
 	 */
 	@OnClose
 	public void onClose(Session s) {
-
+		// 세션 종료시 WebUnit 삭제
+		log.info("세션이 종료되었습니다.");
+		try {
+			service.closeSession(s.getId());
+		} catch (Exception e) {
+			// TODO: handle exception
+			log.error(e.getMessage());
+		}
+		
 	}
-
+	
+	
+	@OnError
+	public void onError(Session s, Throwable thr) {
+		
+	}
+	
 }
