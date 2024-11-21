@@ -12,9 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 public class WebUnitService {
-	private static String WEB_DRIVER_ID="webdriver.chrome.driver";
-	private static String WEB_DRIVER_PATH="C:/workspace/java library/chromedriver-win64/chromedriver.exe";
-	private static String BASE_CHAT_URL = "https://chzzk.naver.com/live/";
+	private String BASE_CHAT_URL = "https://api.chzzk.naver.com/service/v1/channels/";
 	
 	@Autowired
 	WebUnitRepository repo;
@@ -30,7 +28,7 @@ public class WebUnitService {
 	 */
 	public void connectingObserver(Session session, String id) {
 		//System.setProperty(WEB_DRIVER_ID, WEB_DRIVER_PATH);
-		String chatUrl = BASE_CHAT_URL + id+ "/chat";
+		String chatUrl = BASE_CHAT_URL + id+ "/live-detail";
 		repo.CreateWebUnit(chatUrl, session, this);
 		log.info("WebUnit Create Success");
 	}
@@ -56,10 +54,12 @@ public class WebUnitService {
 	 * @param nickname
 	 * @param sessionId
 	 */
-	public void AppendParticipant(String nickname, String sessionId) {
-		if(partService.AppendParticipant(nickname)) {
+	public boolean AppendParticipant(String nickname, String sessionId) {
+		boolean result = partService.AppendParticipant(sessionId, nickname);
+		if(result) {
 			sendMsg(sessionId, MessageType.PERMIT.toString(), nickname);
 		}
+		return result;
 	}
 	
 	
@@ -86,7 +86,15 @@ public class WebUnitService {
 	/**
 	 * 맵 오픈 시 현재까지 수집한 참여자 리스트 리셋
 	 */
-	public void clearParticipant() {
-		partService.clearParticipant();
+	public void clearParticipant(String sessionId) {
+		partService.clearParticipant(sessionId);
+	}
+	
+	/**
+	 * 세션 종료하는 메서드
+	 * @param sessionId 종료할 세션 id
+	 */
+	public void closeSession(String sessionId) {
+		repo.closeSession(sessionId);
 	}
 }

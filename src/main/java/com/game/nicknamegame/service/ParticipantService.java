@@ -16,14 +16,14 @@ public class ParticipantService {
 	 * @param nickname 추가하고자하는 닉네임
 	 * @return
 	 */
-	public boolean AppendParticipant(String nickname) {
-		return repo.AppendParticipant(nickname);
+	public boolean AppendParticipant(String sessionId, String nickname) {
+		return repo.AppendParticipant(sessionId, nickname);
 	}
 	
 	/**
 	 * 참여 마감 후 맵을 열 경우 참여자 Set을 비우는 용도
 	 */
-	public void clearParticipant() {
-		repo.clearParticipant();
+	public void clearParticipant(String sessionId) {
+		repo.clearParticipant(sessionId);
 	}
 }
