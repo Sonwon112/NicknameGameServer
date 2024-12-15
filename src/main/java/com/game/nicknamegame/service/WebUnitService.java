@@ -96,5 +96,6 @@ public class WebUnitService {
 	 */
 	public void closeSession(String sessionId) {
 		repo.closeSession(sessionId);
+		clearParticipant(sessionId);
 	}
 }

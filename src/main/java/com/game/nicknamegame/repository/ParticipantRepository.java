@@ -39,6 +39,8 @@ public class ParticipantRepository {
 	 */
 	public void clearParticipant(String sessionId) {
 		if(participantMap.isEmpty())return;
+		if(!participantMap.containsKey(sessionId))return;
+		
 		Set<String> tmp = participantMap.get(sessionId);
 		if(tmp.isEmpty())return;
 		tmp.clear();;

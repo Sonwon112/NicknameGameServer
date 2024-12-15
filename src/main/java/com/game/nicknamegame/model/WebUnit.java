@@ -72,7 +72,7 @@ public class WebUnit {
 			
 		}catch (Exception e) {
 			// TODO: handle exception
-			e.printStackTrace();
+			log.info("액세스 실패 : "+e.getMessage());
 		} 
 	}
 	
