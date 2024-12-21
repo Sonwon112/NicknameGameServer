@@ -3,6 +3,8 @@ package com.game.nicknamegame.repository;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
@@ -19,7 +21,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Repository
 public class WebUnitRepository {
-
+	
+	
+	private ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 	private Map<String, WebUnit> webUnitMap = new HashMap<>();
 	private Map<String, Session> sessionMap = new HashMap<>();
 
@@ -96,16 +100,25 @@ public class WebUnitRepository {
 			log.error("세션이 존재하지 않습니다.");
 			return;
 		}
-
-		try {
-			DTO dto = new DTO("0niyaNicknameGame", type, msg);
-			String dataToJson = mapper.writeValueAsString(dto);
-			Session s = sessionMap.get(sessionId);
-			s.getBasicRemote().sendText(dataToJson);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		
+		Runnable sendRunnable = new Runnable() {
+			
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				try {
+					DTO dto = new DTO("0niyaNicknameGame", type, msg);
+					String dataToJson = mapper.writeValueAsString(dto);
+					Session s = sessionMap.get(sessionId);
+					s.getBasicRemote().sendText(dataToJson);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		};
+		
+		pool.submit(sendRunnable);
 	}
 	
 	/**
