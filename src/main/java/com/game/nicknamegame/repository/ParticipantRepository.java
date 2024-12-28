@@ -34,16 +34,38 @@ public class ParticipantRepository {
 		return false;
 	}
 	
+	public boolean canPart(String sessionId, String nickname) {
+		if(participantMap.containsKey(sessionId)) {
+			Set<String> participantSet = participantMap.get(sessionId);
+			if(!participantSet.contains(nickname)) {
+				return true;
+			}
+		}else {
+			return true;
+		}
+		return false;
+	}
+	
 	/**
 	 * 참여 마감 후 맵을 열 경우 참여자 Set을 비우는 용도
 	 */
 	public void clearParticipant(String sessionId) {
 		if(participantMap.isEmpty())return;
+		if(!participantMap.containsKey(sessionId))return;
+		
 		Set<String> tmp = participantMap.get(sessionId);
 		if(tmp.isEmpty())return;
 		tmp.clear();;
 	}
 	
+	public int getSize(String sessionId) {
+		if(participantMap.isEmpty())return -1;
+		if(!participantMap.containsKey(sessionId))return -1;
+		
+		Set<String> tmp = participantMap.get(sessionId);
+		if(tmp.isEmpty())return 0;
+		return tmp.size();
+	}
 	
 	
 }

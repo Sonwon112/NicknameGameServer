@@ -47,18 +47,24 @@ public class WebUnitService {
 	 */
 	public void stopPart(Session session) {
 		repo.stopPart(session);
+		log.info("참여자 : " + (partService.getSize(session.getId())));
+				
 	}
 	
 	/**
-	 * 
-	 * @param nickname
-	 * @param sessionId
+	 * 참여가 가능할 경우 클라이언트로 닉네임 전송 후 전송 성공 시 참여자 Set에 추가하기를 시도하는 메소드
+	 * @param nickname 닉네임
+	 * @param sessionId 통신중인 세션 id
+	 * @return 참여가능 여부
 	 */
 	public boolean AppendParticipant(String nickname, String sessionId) {
-		boolean result = partService.AppendParticipant(sessionId, nickname);
+		boolean result = partService.canPart(sessionId, nickname);
 		if(result) {
-			sendMsg(sessionId, MessageType.PERMIT.toString(), nickname);
+			if(sendMsg(sessionId, MessageType.PERMIT.toString(), nickname)) {
+				partService.AppendParticipant(sessionId, nickname);
+			}
 		}
+		
 		return result;
 	}
 	
@@ -69,8 +75,8 @@ public class WebUnitService {
 	 * @param type 데이터 타입
 	 * @param msg 데이터 메시지
 	 */
-	public void sendMsg(String sessionId,String type, String msg) {
-		repo.sendMsg(sessionId,type, msg);
+	public boolean sendMsg(String sessionId,String type, String msg) {
+		return repo.sendMsg(sessionId,type, msg);
 	}
 	
 	/**
@@ -96,5 +102,6 @@ public class WebUnitService {
 	 */
 	public void closeSession(String sessionId) {
 		repo.closeSession(sessionId);
+		clearParticipant(sessionId);
 	}
 }

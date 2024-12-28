@@ -3,6 +3,7 @@ package com.game.nicknamegame.model;
 import java.io.IOException;
 import java.net.URI;
 
+import org.apache.tomcat.websocket.WsWebSocketContainer;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -21,6 +22,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.game.nicknamegame.service.WebUnitService;
 
+import jakarta.websocket.WebSocketContainer;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -28,40 +30,48 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class WebUnit {
 	private static String accTknURL = "https://comm-api.game.naver.com/nng_main/v1/chats/access-token?channelId={chatChannelId}&chatType=STREAMING";
-	
-	
-	private WebSocketClient client = new StandardWebSocketClient();
-	private String chatChannelId;	
-	
+
+	private StandardWebSocketClient client;
+	private String chatChannelId;
+
 	private final static String wssURL = "wss://kr-ss2.chat.naver.com/chat";
 	private ObjectMapper mapper = new ObjectMapper();
 	private WebSocketClientHandler handler;
 	private HttpHeaders headers = new HttpHeaders();
-	
+
 	public WebUnit(String url, WebUnitService service, String sessionId, String cookie) {
+		
+		WsWebSocketContainer container = new WsWebSocketContainer();
+		container.setDefaultMaxTextMessageBufferSize(1024*1024);
+		container.setDefaultMaxBinaryMessageBufferSize(1024*1024);
+		
+		client = new StandardWebSocketClient(container);
+		
 		getChatChannelId(url, cookie);
 		getAccTkn();
 		handler = new WebSocketClientHandler(mapper, service, sessionId);
 		try {
 			WebSocketHttpHeaders headers = new WebSocketHttpHeaders();
 			client.execute(handler, headers, URI.create(wssURL));
-		}catch (Exception e) {
+			
+		} catch (Exception e) {
 			// TODO: handle exception
 			e.printStackTrace();
-		}		
+		}
 	}
-	
+
 	/**
 	 * 치지직 api로 부터 chatChannelId를 획득하기 위한 함수
-	 * @param url api 주소
+	 * 
+	 * @param url    api 주소
 	 * @param cookie 로그인이 되어있어야하기 때문에 쿠키 필요
 	 */
 	public void getChatChannelId(String url, String cookie) {
 		headers.set("Cookie", cookie);
-		
+
 		HttpEntity request = new HttpEntity(headers);
-		ResponseEntity<String> response = new RestTemplate().exchange(url, HttpMethod.GET,request,String.class);
-		
+		ResponseEntity<String> response = new RestTemplate().exchange(url, HttpMethod.GET, request, String.class);
+
 		try {
 			JsonNode jsonNode = mapper.readValue(response.getBody(), JsonNode.class);
 			if (jsonNode.has("content")) {
@@ -69,13 +79,13 @@ public class WebUnit {
 				ChatSocketDTO.setCid(chatChannelId);
 				log.info("success get chatChannelId : " + chatChannelId);
 			}
-			
-		}catch (Exception e) {
+
+		} catch (Exception e) {
 			// TODO: handle exception
-			e.printStackTrace();
-		} 
+			log.info("액세스 실패 : " + e.getMessage());
+		}
 	}
-	
+
 	/**
 	 * 채팅 websocket 접속을 위해 accessToken을 획득하는 메소드
 	 */
@@ -84,55 +94,55 @@ public class WebUnit {
 
 		try {
 			HttpEntity request = new HttpEntity(headers);
-			ResponseEntity<String> response = new RestTemplate().exchange(accTknURL, HttpMethod.GET,request,String.class);
+			ResponseEntity<String> response = new RestTemplate().exchange(accTknURL, HttpMethod.GET, request,
+					String.class);
 			JsonNode jsonNode = mapper.readValue(response.getBody(), JsonNode.class);
-			if(jsonNode.has("content")) {
+			if (jsonNode.has("content")) {
 				String accTkn = jsonNode.get("content").get("accessToken").asText();
 				ChatSocketDTO.setAccTkn(accTkn);
 				log.info("success get AccessToken");
 			}
-		}catch (Exception e) {
+		} catch (Exception e) {
 			// TODO: handle exception
 			e.printStackTrace();
 		}
-		
+
 	}
-	
+
 	/**
 	 * 참가 허용
 	 */
 	public void startCheck() {
 		handler.startCheck();
 	}
-	
+
 	/**
 	 * 참가 종료
 	 */
 	public void stopCheck() {
 		handler.stopCheck();
 	}
-	
+
 }
 
-
 @Slf4j
-@Getter @Setter
-class WebSocketClientHandler extends TextWebSocketHandler{
+@Getter
+@Setter
+class WebSocketClientHandler extends TextWebSocketHandler {
 	private ObjectMapper mapper;
 	private WebUnitService service;
 	private String ClientSessionId;
-	
+
 	private WebSocketSession session;
 	private boolean isConnect = false;
 	private boolean isPermit = false;
 	private Thread repeatThread;
-	
+
 	public WebSocketClientHandler(ObjectMapper mapper, WebUnitService service, String ClientSessionId) {
 		this.mapper = mapper;
 		this.service = service;
 		this.ClientSessionId = ClientSessionId;
 	}
-	
 
 	@Override
 	public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -142,7 +152,7 @@ class WebSocketClientHandler extends TextWebSocketHandler{
 		session.sendMessage(new TextMessage(fsData));
 		log.info("send fsData");
 	}
-	
+
 	@Override
 	public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
 		// TODO Auto-generated method stub
@@ -151,26 +161,27 @@ class WebSocketClientHandler extends TextWebSocketHandler{
 		isConnect = false;
 		service.closeSession(ClientSessionId);
 	}
-	
+
 	@Override
 	protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
 		// TODO Auto-generated method stub
 		JsonNode jsonNode = mapper.readValue(message.getPayload(), JsonNode.class);
-		//log.info(""+message.getPayload());
-		if(jsonNode.has("cmd")) {
+		// log.info(""+message.getPayload());
+		if (jsonNode.has("cmd")) {
 			switch (jsonNode.get("cmd").asText()) {
-			
+
 			// ------------------ 연결 성공을 알리는 cmd
 			case "10100": {
-				if(!jsonNode.get("retMsg").asText().equals("SUCCESS")) break;
+				if (!jsonNode.get("retMsg").asText().equals("SUCCESS"))
+					break;
 				log.info("connect successfully chat ws Server..");
 				isConnect = true;
 				repeatThread = new Thread(new Runnable() {
-					
+
 					@Override
 					public void run() {
 						// TODO Auto-generated method stub
-						while(isConnect) {
+						while (isConnect) {
 							try {
 								String repeatData = mapper.writeValueAsString(ChatSocketDTO.rs);
 								session.sendMessage(message);
@@ -192,55 +203,51 @@ class WebSocketClientHandler extends TextWebSocketHandler{
 				break;
 			}
 			// ------------------ 새로 온 채팅을 보낸 cmd
-			case "93101":{
-				if(!isPermit)break;
+			case "93101": {
+				if (!isPermit)
+					break;
 				JsonNode userJsonNode = jsonNode.get("bdy");
-				if(userJsonNode.isArray()) {
-					for(JsonNode element : userJsonNode) {
+				if (userJsonNode.isArray()) {
+					for (JsonNode element : userJsonNode) {
 						JsonNode profile = mapper.readValue(element.get("profile").asText(), JsonNode.class);
-						String nickname = profile.has("nickname") ?  profile.get("nickname").asText() : "NonProfile";
+						String nickname = profile.has("nickname") ? profile.get("nickname").asText() : "NonProfile";
 						String msg = element.get("msg").asText();
 //						log.info(nickname + " : " + msg);
-						if(msg.equals("!참여")) {
-							if(service.AppendParticipant(nickname, ClientSessionId))
-								log.info(nickname+" is part in game");
+						if (msg.equals("!참여")) {
+							if (service.AppendParticipant(nickname, ClientSessionId))
+								log.info(nickname + " is part in game");
 						}
 					}
 				}
 				break;
 			}
-			case "0":{
+			case "0": {
 				// 변경 없이 connection 유지를 위한 통신
 				break;
 			}
 			}
 			
 		}
-		
-		
 	}
-	
+
 	/**
 	 * 참여 허용
 	 */
 	public void startCheck() {
-		if(isConnect) {
+		if (isConnect) {
 			isPermit = true;
 			log.info("if user input \"!참여\" then they can part in game now");
 		}
 	}
-	
+
 	/**
 	 * 참여 금지
 	 */
 	public void stopCheck() {
-		if(isConnect) {
+		if (isConnect) {
 			isPermit = false;
 			log.info("user can't part in game now");
 		}
 	}
 
-
-	
-	
 }

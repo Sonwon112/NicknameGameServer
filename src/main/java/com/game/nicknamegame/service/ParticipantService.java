@@ -20,10 +20,18 @@ public class ParticipantService {
 		return repo.AppendParticipant(sessionId, nickname);
 	}
 	
+	public boolean canPart(String sessionId, String nickname) {
+		return repo.canPart(sessionId, nickname);
+	}
+	
 	/**
 	 * 참여 마감 후 맵을 열 경우 참여자 Set을 비우는 용도
 	 */
 	public void clearParticipant(String sessionId) {
 		repo.clearParticipant(sessionId);
+	}
+	
+	public int getSize(String sessionId) {
+		return repo.getSize(sessionId);
 	}
 }

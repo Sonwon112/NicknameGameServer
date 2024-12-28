@@ -1,5 +1,6 @@
 package com.game.nicknamegame.controller;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -85,6 +86,14 @@ public class WebSocketController {
 				
 				break;
 		}
+		
+		
+		try {
+			session.getBasicRemote().flushBatch();
+		}catch(IOException e) {
+			log.info("flush exception : "+ e.getMessage());
+		}
+		
 	}
 	
 	
